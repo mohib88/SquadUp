@@ -1,0 +1,155 @@
+datasource db {
+  provider = "mysql"
+  // TODO seperate for dev and prod
+  url      = env("MYSQL_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model Device{
+  id          Int         @default(autoincrement()) @id
+  deviceId    String      @db.VarChar(100)
+  createdAt   DateTime    @default(now()) 
+  user        User[]
+}
+
+model User{
+  id          String      @id @default(uuid())
+  userId      String?     @db.VarChar(100) @unique
+  idToken     String?     @db.VarChar(1024)
+  email       String      @db.VarChar(256) @unique
+  password    String?     @db.VarChar(100)
+  authStage   AuthStage   @default(SIGNUP)
+  authType    AuthType    @default(GOOGLE)
+  createdAt   DateTime    @default(now())
+  dob         DateTime    
+  device      Device      @relation(fields: [dID], references:[id])
+  dID         Int
+  profile     Profile? 
+}
+
+model Profile{
+  id          String      @id @default(uuid())
+  name        String?     @db.VarChar(100)
+  username    String?     @db.VarChar(100) @unique
+  avatarUrl   String      @db.VarChar(1024)  @default("https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/default-avatar.png")
+  bio         String?     @db.VarChar(200)
+  user        User        @relation(fields: [uID], references:[id])
+  uID         String
+  messages    Message[]
+  teams       UsersOnTeam[]
+  games       UserOnGames[]
+}
+
+model Chat{
+  id        String          @id @default(uuid())
+  team      Team            @relation(fields: [teamId], references: [id])
+  teamId    String
+  messages  Message[]
+}
+
+
+model Message{
+  id            String            @id @default(uuid())
+  text          String            @db.VarChar(300)
+  attachements  Attachment[]
+  senderId      String
+  sender        Profile           @relation(fields: [senderId], references: [id])
+  chatId        String
+  chat          Chat   @relation(fields: [chatId], references: [id])
+  sentAt        DateTime          @default(now())
+}
+
+
+model Attachment{
+  id            String              @id @default(uuid())
+  resourceUrl   String              @db.VarChar(1024)
+  type          AttachmentType      @default(PHOTO)
+  messageId     String
+  message       Message             @relation(fields: [messageId], references: [id])
+}
+
+
+model Game{
+  id        String        @id @default(uuid())
+  name      String        @db.VarChar(100)
+  gameId    String        @db.VarChar(20) @unique
+  maxSize   Int           @db.Int @default(4)
+  coverUrl  String        @db.VarChar(1024)
+  teams     Team[]
+  users     UserOnGames[]
+}
+
+
+model Team{
+  id        String        @id @default(uuid())
+  name      String        @db.VarChar(100)
+  teamId    String        @db.VarChar(20) @unique
+  coverUrl  String        @db.VarChar(1024) @default("https://firebasestorage.googleapis.com/v0/b/squadupapp-cf4d3.appspot.com/o/defaultTeam.png?alt=media&token=6b9eb452-750c-4168-8e4f-7e9874571698")
+  game      Game          @relation(fields: [gId], references:[id])
+  gId       String
+  users     UsersOnTeam[]
+  chat      Chat?
+}
+
+
+
+model UsersOnTeam{
+  profile     Profile       @relation(fields: [profileId], references: [id])
+  profileId   String        
+  team        Team          @relation(fields: [tId], references:[id])
+  tId         String
+  @@id([profileId, tId])
+}
+
+model UserOnGames{
+  profile     Profile       @relation(fields: [profileId], references: [id])
+  profileId   String        
+  game        Game          @relation(fields: [gId], references:[id])
+  gId         String
+  @@id([profileId, gId])
+}
+
+
+
+
+enum AttachmentType{
+  PHOTO
+  VIDEO
+  FILE
+}
+
+
+enum AuthType{
+  GOOGLE
+  FACEBOOK
+  EMAIL
+}
+
+enum AuthStage{
+  SIGNUP
+  USERNAME
+  SUB
+  FINAL
+}
+
+
+
+
+
+// SET FOREIGN_KEY_CHECKS = 0;
+// drop table if exists Attachment;
+// drop table if exists Chat;
+// drop table if exists Device;
+// drop table if exists Game;
+// drop table if exists Message;
+// drop table if exists MessagesOnChats;
+// drop table if exists Profile;
+// drop table if exists Team;
+// drop table if exists User;
+// drop table if exists UsersOnTeam;
+// drop table if exists _prisma_migrations;
+// SET FOREIGN_KEY_CHECKS = 1;
